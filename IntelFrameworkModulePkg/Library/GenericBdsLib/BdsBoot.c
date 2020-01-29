@@ -3091,6 +3091,40 @@ BdsDeleteAllInvalidEfiBootOption (
   return Status;
 }
 
+STATIC
+EFI_STATUS
+EfiDeleteVariable (
+  IN CHAR16   *VarName,
+  IN EFI_GUID *VarGuid
+  )
+{
+  VOID        *VarBuf;
+  EFI_STATUS  Status;
+  UINTN       VarSize;
+
+  VarBuf  = BdsLibGetVariableAndSize (VarName, VarGuid, &VarSize);
+  Status  = EFI_NOT_FOUND;
+
+  if (VarBuf != NULL) {
+    //
+    // Delete variable from Storage
+    //
+    Status = gRT->SetVariable (
+                    VarName,
+                    VarGuid,
+                    EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+                    0,
+                    NULL
+                    );
+    //
+    // Deleting variable with current variable implementation shouldn't fail.
+    //
+    ASSERT_EFI_ERROR (Status);
+    FreePool (VarBuf);
+  }
+
+  return Status;
+}
 
 /**
   For EFI boot option, BDS separate them as six types:
@@ -3193,12 +3227,14 @@ BdsLibEnumerateAllBootOption (
   // BBS table and create to variable as the EFI boot option, it should
   // be removed after the CSM can provide legacy boot option directly
   //
-  REFRESH_LEGACY_BOOT_OPTIONS;
+  //REFRESH_LEGACY_BOOT_OPTIONS;
 
   //
   // Delete invalid boot option
   //
-  BdsDeleteAllInvalidEfiBootOption ();
+  //BdsDeleteAllInvalidEfiBootOption ();
+
+  EfiDeleteVariable (L"BootOrder", &gEfiGlobalVariableGuid);
 
   //
   // Parse removable media followed by fixed media.
