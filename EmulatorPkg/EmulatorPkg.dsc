@@ -4,7 +4,7 @@
 # The Emulation Platform can be used to debug individual modules, prior to creating
 # a real platform. This also provides an example for how an DSC is created.
 #
-# Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
 # Portions copyright (c) 2010 - 2011, Apple Inc. All rights reserved.<BR>
 #
 # SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -19,7 +19,7 @@
   OUTPUT_DIRECTORY               = Build/Emulator$(ARCH)
 
   SUPPORTED_ARCHITECTURES        = X64|IA32
-  BUILD_TARGETS                  = DEBUG|RELEASE
+  BUILD_TARGETS                  = DEBUG|RELEASE|NOOPT
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = EmulatorPkg/EmulatorPkg.fdf
 
@@ -236,18 +236,20 @@
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|L"Timeout"|gEfiGlobalVariableGuid|0x0|10
 
 [Components]
-!ifdef $(UNIX_SEC_BUILD)
-  ##
-  #  Emulator, OS POSIX application
-  ##
-  EmulatorPkg/Unix/Host/Host.inf
-!endif
-
-!ifdef $(WIN_SEC_BUILD)
-  ##
-  #  Emulator, OS WIN application
-  ##
-  EmulatorPkg/Win/Host/WinHost.inf
+!if "IA32" in $(ARCH) || "X64" in $(ARCH)
+  !if "MSFT" in $(FAMILY) || $(WIN_HOST_BUILD) == TRUE
+    ##
+    #  Emulator, OS WIN application
+    #  CLANGPDB is cross OS tool chain. It depends on WIN_HOST_BUILD flag
+    #  to build WinHost application.
+    ##
+    EmulatorPkg/Win/Host/WinHost.inf
+  !else
+    ##
+    #  Emulator, OS POSIX application
+    ##
+    EmulatorPkg/Unix/Host/Host.inf
+  !endif
 !endif
 
 !ifndef $(SKIP_MAIN_BUILD)
@@ -332,7 +334,9 @@
 
   MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
+!if "XCODE5" not in $(TOOL_CHAIN_TAG)
   MdeModulePkg/Logo/LogoDxe.inf
+!endif
   MdeModulePkg/Universal/LoadFileOnFv2/LoadFileOnFv2.inf
   MdeModulePkg/Application/UiApp/UiApp.inf {
    <LibraryClasses>
@@ -375,10 +379,12 @@
 
   FatPkg/EnhancedFatDxe/Fat.inf
 
+!if "XCODE5" not in $(TOOL_CHAIN_TAG)
   ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf {
     <PcdsFixedAtBuild>
       gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
   }
+!endif
   ShellPkg/Application/Shell/Shell.inf {
     <LibraryClasses>
       ShellCommandLib|ShellPkg/Library/UefiShellCommandLib/UefiShellCommandLib.inf
@@ -408,10 +414,24 @@
 !include NetworkPkg/Network.dsc.inc
 
 [BuildOptions]
+  #
+  # Disable deprecated APIs.
+  #
+  *_*_*_CC_FLAGS = -D DISABLE_NEW_DEPRECATED_INTERFACES
+
   MSFT:DEBUG_*_*_CC_FLAGS = /Od /Oy-
   MSFT:NOOPT_*_*_CC_FLAGS = /Od /Oy-
+  GCC:DEBUG_CLANGPDB_*_CC_FLAGS =-O0 -Wno-unused-command-line-argument -Wno-incompatible-pointer-types -Wno-enum-conversion -Wno-incompatible-pointer-types -Wno-sometimes-uninitialized -Wno-constant-conversion -Wno-main-return-type
 
   MSFT:*_*_*_DLINK_FLAGS     = /ALIGN:4096 /FILEALIGN:4096 /SUBSYSTEM:CONSOLE
   MSFT:DEBUG_*_*_DLINK_FLAGS = /EXPORT:InitializeDriver=$(IMAGE_ENTRY_POINT) /BASE:0x10000
   MSFT:NOOPT_*_*_DLINK_FLAGS = /EXPORT:InitializeDriver=$(IMAGE_ENTRY_POINT) /BASE:0x10000
 
+!if $(WIN_HOST_BUILD) == TRUE
+  #
+  # CLANGPDB tool chain depends on WIN_HOST_BUILD flag to generate the windows application.
+  #
+  GCC:*_CLANGPDB_*_DLINK_FLAGS     = /ALIGN:4096 /FILEALIGN:4096 /SUBSYSTEM:CONSOLE
+  GCC:DEBUG_CLANGPDB_*_DLINK_FLAGS = /EXPORT:InitializeDriver=$(IMAGE_ENTRY_POINT) /BASE:0x10000
+  GCC:NOOPT_CLANGPDB_*_DLINK_FLAGS = /EXPORT:InitializeDriver=$(IMAGE_ENTRY_POINT) /BASE:0x10000
+!endif

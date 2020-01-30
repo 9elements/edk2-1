@@ -11,9 +11,8 @@
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/IoLib.h>
+#include <Library/PciLib.h>
 #include <Library/TimerLib.h>
-#include <OvmfPlatforms.h>
-
 #include <OvmfPlatforms.h>
 
 VOID
@@ -101,24 +100,6 @@ ResetShutdown (
   ASSERT (FALSE);
 }
 
-
-/**
-  Calling this function causes the system to enter a power state for capsule
-  update.
-
-  Reset update should not return, if it returns, it means the system does
-  not support capsule update.
-
-**/
-VOID
-EFIAPI
-EnterS3WithImmediateWake (
-  VOID
-  )
-{
-  AcpiPmControl (1);
-  ASSERT (FALSE);
-}
 
 /**
   This function causes a systemwide reset. The exact type of the reset is

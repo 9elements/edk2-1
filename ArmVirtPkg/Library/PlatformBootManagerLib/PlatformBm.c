@@ -26,6 +26,7 @@
 #include <Protocol/VirtioDevice.h>
 #include <Guid/EventGroup.h>
 #include <Guid/RootBridgesConnectedEventGroup.h>
+#include <Guid/SerialPortLibVendor.h>
 
 #include "PlatformBm.h"
 
@@ -41,18 +42,13 @@ typedef struct {
 } PLATFORM_SERIAL_CONSOLE;
 #pragma pack ()
 
-#define SERIAL_DXE_FILE_GUID { \
-          0xD3987D4B, 0x971A, 0x435F, \
-          { 0x8C, 0xAF, 0x49, 0x67, 0xEB, 0x62, 0x72, 0x41 } \
-          }
-
 STATIC PLATFORM_SERIAL_CONSOLE mSerialConsole = {
   //
   // VENDOR_DEVICE_PATH SerialDxe
   //
   {
     { HARDWARE_DEVICE_PATH, HW_VENDOR_DP, DP_NODE_LEN (VENDOR_DEVICE_PATH) },
-    SERIAL_DXE_FILE_GUID
+    EDKII_SERIAL_PORT_LIB_VENDOR_GUID
   },
 
   //
@@ -846,9 +842,17 @@ PlatformBootManagerWaitCallback (
 {
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Black;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION White;
-  UINT16                              Timeout;
+  UINT16                              TimeoutInitial;
 
-  Timeout = PcdGet16 (PcdPlatformBootTimeOut);
+  TimeoutInitial = PcdGet16 (PcdPlatformBootTimeOut);
+
+  //
+  // If PcdPlatformBootTimeOut is set to zero, then we consider
+  // that no progress update should be enacted.
+  //
+  if (TimeoutInitial == 0) {
+    return;
+  }
 
   Black.Raw = 0x00000000;
   White.Raw = 0x00FFFFFF;
@@ -858,7 +862,7 @@ PlatformBootManagerWaitCallback (
     Black.Pixel,
     L"Start boot option",
     White.Pixel,
-    (Timeout - TimeoutRemain) * 100 / Timeout,
+    (TimeoutInitial - TimeoutRemain) * 100 / TimeoutInitial,
     0
     );
 }

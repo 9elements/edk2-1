@@ -61,11 +61,13 @@
 
 [Pcd]
   gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber        ## CONSUMES
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuBootLogicalProcessorNumber       ## CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuApInitTimeOutInMicroSeconds      ## SOMETIMES_CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuApStackSize                      ## CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuMicrocodePatchAddress            ## CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuMicrocodePatchRegionSize         ## CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuApLoopMode                       ## CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuApTargetCstate                   ## SOMETIMES_CONSUMES
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuShadowMicrocodeByFit             ## CONSUMES
   gEfiMdeModulePkgTokenSpaceGuid.PcdCpuStackGuard                  ## CONSUMES
 

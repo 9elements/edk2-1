@@ -10,6 +10,21 @@
 [Defines]
   DEFINE DEBUG_PRINT_ERROR_LEVEL = 0x8000004F
 
+!if $(TARGET) != NOOPT
+  DEFINE FD_SIZE_IN_MB    = 2
+!else
+  DEFINE FD_SIZE_IN_MB    = 3
+!endif
+
+!if $(FD_SIZE_IN_MB) == 2
+  DEFINE FD_SIZE          = 0x200000
+  DEFINE FD_NUM_BLOCKS    = 0x200
+!endif
+!if $(FD_SIZE_IN_MB) == 3
+  DEFINE FD_SIZE          = 0x300000
+  DEFINE FD_NUM_BLOCKS    = 0x300
+!endif
+
 [BuildOptions.common.EDKII.DXE_CORE,BuildOptions.common.EDKII.DXE_DRIVER,BuildOptions.common.EDKII.UEFI_DRIVER,BuildOptions.common.EDKII.UEFI_APPLICATION]
   GCC:*_*_*_DLINK_FLAGS = -z common-page-size=0x1000
 
@@ -71,6 +86,9 @@
 
   # Networking Requirements
 !include NetworkPkg/NetworkLibs.dsc.inc
+!if $(NETWORK_TLS_ENABLE) == TRUE
+  TlsLib|CryptoPkg/Library/TlsLib/TlsLib.inf
+!endif
 
 
   #
@@ -136,7 +154,11 @@
   # CryptoPkg libraries needed by multiple firmware features
   #
   IntrinsicLib|CryptoPkg/Library/IntrinsicLib/IntrinsicLib.inf
+!if $(NETWORK_TLS_ENABLE) == TRUE
+  OpensslLib|CryptoPkg/Library/OpensslLib/OpensslLib.inf
+!else
   OpensslLib|CryptoPkg/Library/OpensslLib/OpensslLibCrypto.inf
+!endif
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/BaseCryptLib.inf
 
   #

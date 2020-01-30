@@ -2,7 +2,7 @@
   Implementation for PlatformBootManagerLib library class interfaces.
 
   Copyright (C) 2015-2016, Red Hat, Inc.
-  Copyright (c) 2014, ARM Ltd. All rights reserved.<BR>
+  Copyright (c) 2014 - 2019, ARM Ltd. All rights reserved.<BR>
   Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
   Copyright (c) 2016, Linaro Ltd. All rights reserved.<BR>
 
@@ -28,6 +28,7 @@
 #include <Protocol/PlatformBootManager.h>
 #include <Guid/EventGroup.h>
 #include <Guid/TtyTerm.h>
+#include <Guid/SerialPortLibVendor.h>
 
 #include "PlatformBm.h"
 
@@ -42,18 +43,13 @@ typedef struct {
 } PLATFORM_SERIAL_CONSOLE;
 #pragma pack ()
 
-#define SERIAL_DXE_FILE_GUID { \
-          0xD3987D4B, 0x971A, 0x435F, \
-          { 0x8C, 0xAF, 0x49, 0x67, 0xEB, 0x62, 0x72, 0x41 } \
-          }
-
 STATIC PLATFORM_SERIAL_CONSOLE mSerialConsole = {
   //
   // VENDOR_DEVICE_PATH SerialDxe
   //
   {
     { HARDWARE_DEVICE_PATH, HW_VENDOR_DP, DP_NODE_LEN (VENDOR_DEVICE_PATH) },
-    SERIAL_DXE_FILE_GUID
+    EDKII_SERIAL_PORT_LIB_VENDOR_GUID
   },
 
   //
@@ -554,6 +550,11 @@ PlatformBootManagerBeforeConsole (
   EfiEventGroupSignal (&gEfiEndOfDxeEventGroupGuid);
 
   //
+  // Dispatch deferred images after EndOfDxe event.
+  //
+  EfiBootManagerDispatchDeferredImages ();
+
+  //
   // Locate the PCI root bridges and make the PCI bus driver connect each,
   // non-recursively. This will produce a number of child handles with PciIo on
   // them.
@@ -654,11 +655,11 @@ HandleCapsules (
   Do the platform specific action after the console is ready
   Possible things that can be done in PlatformBootManagerAfterConsole:
   > Console post action:
-    > Dynamically switch output mode from 100x31 to 80x25 for certain senarino
+    > Dynamically switch output mode from 100x31 to 80x25 for certain scenario
     > Signal console ready platform customized event
   > Run diagnostics like memory testing
   > Connect certain devices
-  > Dispatch aditional option roms
+  > Dispatch additional option roms
   > Special boot: e.g.: USB boot, enter UI
 **/
 VOID

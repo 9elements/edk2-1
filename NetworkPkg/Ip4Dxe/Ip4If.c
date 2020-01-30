@@ -491,9 +491,13 @@ Ip4CreateInterface (
   IP4_INTERFACE             *Interface;
   EFI_SIMPLE_NETWORK_MODE   SnpMode;
 
+  if (Mnp == NULL) {
+    return NULL;
+  }
+
   Interface = AllocatePool (sizeof (IP4_INTERFACE));
 
-  if ((Interface == NULL) || (Mnp == NULL)) {
+  if (Interface == NULL) {
     return NULL;
   }
 
@@ -592,7 +596,7 @@ Ip4SetAddress (
       Interface->Controller,
       Interface->Image,
       &gEfiArpServiceBindingProtocolGuid,
-      &Interface->ArpHandle
+      Interface->ArpHandle
       );
 
     Interface->ArpHandle = NULL;
@@ -657,7 +661,7 @@ ON_ERROR:
     Interface->Controller,
     Interface->Image,
     &gEfiArpServiceBindingProtocolGuid,
-    &Interface->ArpHandle
+    Interface->ArpHandle
     );
 
   return Status;

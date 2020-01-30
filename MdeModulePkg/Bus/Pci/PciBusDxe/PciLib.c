@@ -1054,7 +1054,9 @@ PciScanBus (
                 &PciDevice
                 );
 
-      ASSERT (!EFI_ERROR (Status));
+      if (EFI_ERROR (Status)) {
+        continue;
+      }
 
       PciAddress = EFI_PCI_ADDRESS (StartBusNumber, Device, Func, 0);
 
@@ -1114,24 +1116,7 @@ PciScanBus (
         //
         // For PPB
         //
-        if (!FeaturePcdGet (PcdPciBusHotplugDeviceSupport)) {
-          //
-          // If Hot Plug is not supported,
-          // get the bridge information
-          //
-          Status = PciSearchDevice (
-                    Bridge,
-                    &Pci,
-                    StartBusNumber,
-                    Device,
-                    Func,
-                    &PciDevice
-                    );
-
-          if (EFI_ERROR (Status)) {
-            return Status;
-          }
-        } else {
+        if (FeaturePcdGet (PcdPciBusHotplugDeviceSupport)) {
           //
           // If Hot Plug is supported,
           // Get the bridge information

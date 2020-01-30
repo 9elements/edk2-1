@@ -30,9 +30,9 @@
   #
   DEFINE SECURE_BOOT_ENABLE      = FALSE
   DEFINE SMM_REQUIRE             = FALSE
+  DEFINE SOURCE_DEBUG_ENABLE     = FALSE
   DEFINE TPM2_ENABLE             = FALSE
   DEFINE TPM2_CONFIG_ENABLE      = FALSE
-  DEFINE USE_LEGACY_ISA_STACK    = FALSE
 
   #
   # Network definition
@@ -67,7 +67,7 @@
   GCC:RELEASE_*_*_CC_FLAGS             = -DMDEPKG_NDEBUG
   INTEL:RELEASE_*_*_CC_FLAGS           = /D MDEPKG_NDEBUG
   MSFT:RELEASE_*_*_CC_FLAGS            = /D MDEPKG_NDEBUG
-!if $(TOOL_CHAIN_TAG) != "XCODE5"
+!if $(TOOL_CHAIN_TAG) != "XCODE5" && $(TOOL_CHAIN_TAG) != "CLANGPDB"
   GCC:*_*_*_CC_FLAGS                   = -mno-mmx -mno-sse
 !endif
 
@@ -81,12 +81,14 @@
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
   GCC:*_*_*_DLINK_FLAGS = -z common-page-size=0x1000
   XCODE:*_*_*_DLINK_FLAGS =
+  CLANGPDB:*_*_*_DLINK_FLAGS = /ALIGN:4096
 
 # Force PE/COFF sections to be aligned at 4KB boundaries to support page level
 # protection of DXE_SMM_DRIVER/SMM_CORE modules
 [BuildOptions.common.EDKII.DXE_SMM_DRIVER, BuildOptions.common.EDKII.SMM_CORE]
   GCC:*_*_*_DLINK_FLAGS = -z common-page-size=0x1000
   XCODE:*_*_*_DLINK_FLAGS =
+  CLANGPDB:*_*_*_DLINK_FLAGS = /ALIGN:4096
 
 ################################################################################
 #
@@ -158,7 +160,7 @@
   CustomizedDisplayLib|MdeModulePkg/Library/CustomizedDisplayLib/CustomizedDisplayLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
 
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   PeCoffExtraActionLib|SourceLevelDebugPkg/Library/PeCoffExtraActionLibDebug/PeCoffExtraActionLibDebug.inf
   DebugCommunicationLib|SourceLevelDebugPkg/Library/DebugCommunicationLibSerialPort/DebugCommunicationLibSerialPort.inf
 !else
@@ -179,10 +181,8 @@
 
 !if $(SECURE_BOOT_ENABLE) == TRUE
   PlatformSecureLib|OvmfPkg/Library/PlatformSecureLib/PlatformSecureLib.inf
-  TpmMeasurementLib|SecurityPkg/Library/DxeTpmMeasurementLib/DxeTpmMeasurementLib.inf
   AuthVariableLib|SecurityPkg/Library/AuthVariableLib/AuthVariableLib.inf
 !else
-  TpmMeasurementLib|MdeModulePkg/Library/TpmMeasurementLibNull/TpmMeasurementLibNull.inf
   AuthVariableLib|MdeModulePkg/Library/AuthVariableLibNull/AuthVariableLibNull.inf
 !endif
   VarCheckLib|MdeModulePkg/Library/VarCheckLib/VarCheckLib.inf
@@ -203,13 +203,16 @@
   SmbusLib|MdePkg/Library/BaseSmbusLibNull/BaseSmbusLibNull.inf
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   XenHypercallLib|OvmfPkg/Library/XenHypercallLib/XenHypercallLib.inf
+  XenPlatformLib|OvmfPkg/Library/XenPlatformLib/XenPlatformLib.inf
 
 !if $(TPM2_ENABLE) == TRUE
   Tpm2CommandLib|SecurityPkg/Library/Tpm2CommandLib/Tpm2CommandLib.inf
   Tcg2PhysicalPresenceLib|OvmfPkg/Library/Tcg2PhysicalPresenceLibQemu/DxeTcg2PhysicalPresenceLib.inf
   Tcg2PpVendorLib|SecurityPkg/Library/Tcg2PpVendorLibNull/Tcg2PpVendorLibNull.inf
+  TpmMeasurementLib|SecurityPkg/Library/DxeTpmMeasurementLib/DxeTpmMeasurementLib.inf
 !else
   Tcg2PhysicalPresenceLib|OvmfPkg/Library/Tcg2PhysicalPresenceLibNull/DxeTcg2PhysicalPresenceLib.inf
+  TpmMeasurementLib|MdeModulePkg/Library/TpmMeasurementLibNull/TpmMeasurementLibNull.inf
 !endif
 
 [LibraryClasses.common]
@@ -225,7 +228,7 @@
 !endif
   ReportStatusCodeLib|MdeModulePkg/Library/PeiReportStatusCodeLib/PeiReportStatusCodeLib.inf
   ExtractGuidedSectionLib|MdePkg/Library/BaseExtractGuidedSectionLib/BaseExtractGuidedSectionLib.inf
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   DebugAgentLib|SourceLevelDebugPkg/Library/DebugAgent/SecPeiDebugAgentLib.inf
 !endif
   HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
@@ -267,7 +270,7 @@
   PeCoffLib|MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
   ResourcePublicationLib|MdePkg/Library/PeiResourcePublicationLib/PeiResourcePublicationLib.inf
   ExtractGuidedSectionLib|MdePkg/Library/PeiExtractGuidedSectionLib/PeiExtractGuidedSectionLib.inf
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   DebugAgentLib|SourceLevelDebugPkg/Library/DebugAgent/SecPeiDebugAgentLib.inf
 !endif
   CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/PeiCpuExceptionHandlerLib.inf
@@ -292,7 +295,7 @@
   DebugLib|OvmfPkg/Library/PlatformDebugLibIoPort/PlatformDebugLibIoPort.inf
 !endif
   ExtractGuidedSectionLib|MdePkg/Library/DxeExtractGuidedSectionLib/DxeExtractGuidedSectionLib.inf
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   DebugAgentLib|SourceLevelDebugPkg/Library/DebugAgent/DxeDebugAgentLib.inf
 !endif
   CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf
@@ -351,7 +354,7 @@
 !else
   LockBoxLib|OvmfPkg/Library/LockBoxLib/LockBoxDxeLib.inf
 !endif
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   DebugAgentLib|SourceLevelDebugPkg/Library/DebugAgent/DxeDebugAgentLib.inf
 !endif
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
@@ -389,7 +392,7 @@
   DebugLib|OvmfPkg/Library/PlatformDebugLibIoPort/PlatformDebugLibIoPort.inf
 !endif
   CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/SmmCpuExceptionHandlerLib.inf
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   DebugAgentLib|SourceLevelDebugPkg/Library/DebugAgent/SmmDebugAgentLib.inf
 !endif
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/SmmCryptLib.inf
@@ -428,6 +431,7 @@
 !if $(SMM_REQUIRE) == TRUE
   gUefiOvmfPkgTokenSpaceGuid.PcdSmmSmramRequire|TRUE
   gUefiCpuPkgTokenSpaceGuid.PcdCpuSmmEnableBspElection|FALSE
+  gEfiMdeModulePkgTokenSpaceGuid.PcdEnableVariableRuntimeCache|FALSE
 !endif
 
 [PcdsFixedAtBuild]
@@ -481,7 +485,7 @@
   # DEBUG_ERROR     0x80000000  // Error
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x8000004F
 
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x17
 !else
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2F
@@ -495,7 +499,7 @@
   # never lets the RAM below 4 GB exceed 2816 MB.
   gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress|0xB0000000
 
-!ifdef $(SOURCE_DEBUG_ENABLE)
+!if $(SOURCE_DEBUG_ENABLE) == TRUE
   gEfiSourceLevelDebugPkgTokenSpaceGuid.PcdDebugLoadImageMethod|0x2
 !endif
 
@@ -503,8 +507,6 @@
   # Network Pcds
   #
 !include NetworkPkg/NetworkPcds.dsc.inc
-
-  gEfiIntelFrameworkModulePkgTokenSpaceGuid.PcdShellFile|{ 0x83, 0xA5, 0x04, 0x7C, 0x3E, 0x9E, 0x1C, 0x4F, 0xAD, 0x65, 0xE0, 0x52, 0x68, 0xD0, 0xB4, 0xD1 }
 
 !if $(SMM_REQUIRE) == TRUE
   gUefiCpuPkgTokenSpaceGuid.PcdCpuSmmStackSize|0x4000
@@ -556,7 +558,7 @@
 
   # UefiCpuPkg PCDs related to initial AP bringup and general AP management.
   gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber|64
-  gUefiCpuPkgTokenSpaceGuid.PcdCpuApInitTimeOutInMicroSeconds|50000
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuBootLogicalProcessorNumber|0
 
   # Set memory encryption mask
   gEfiMdeModulePkgTokenSpaceGuid.PcdPteMemoryEncryptionAddressOrMask|0x0
@@ -571,6 +573,12 @@
 
 !if $(TPM2_ENABLE) == TRUE
   gEfiSecurityPkgTokenSpaceGuid.PcdTpmInstanceGuid|{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+!endif
+
+[PcdsDynamicHii]
+!if $(TPM2_ENABLE) == TRUE && $(TPM2_CONFIG_ENABLE) == TRUE
+  gEfiSecurityPkgTokenSpaceGuid.PcdTcgPhysicalPresenceInterfaceVer|L"TCG2_VERSION"|gTcg2ConfigFormSetGuid|0x0|"1.3"|NV,BS
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpm2AcpiTableRev|L"TCG2_VERSION"|gTcg2ConfigFormSetGuid|0x8|3|NV,BS
 !endif
 
 ################################################################################
@@ -628,10 +636,8 @@
       NULL|SecurityPkg/Library/HashInstanceLibSha256/HashInstanceLibSha256.inf
       NULL|SecurityPkg/Library/HashInstanceLibSha384/HashInstanceLibSha384.inf
       NULL|SecurityPkg/Library/HashInstanceLibSha512/HashInstanceLibSha512.inf
+      NULL|SecurityPkg/Library/HashInstanceLibSm3/HashInstanceLibSm3.inf
   }
-!if $(TPM2_CONFIG_ENABLE) == TRUE
-  SecurityPkg/Tcg/Tcg2Config/Tcg2ConfigDxe.inf
-!endif
 !endif
 
   #
@@ -686,7 +692,7 @@
     <LibraryClasses>
 !ifdef $(CSM_ENABLE)
       NULL|OvmfPkg/Csm/CsmSupportLib/CsmSupportLib.inf
-      NULL|IntelFrameworkModulePkg/Library/LegacyBootManagerLib/LegacyBootManagerLib.inf
+      NULL|OvmfPkg/Csm/LegacyBootManagerLib/LegacyBootManagerLib.inf
 !endif
   }
   MdeModulePkg/Logo/LogoDxe.inf
@@ -696,8 +702,8 @@
       NULL|MdeModulePkg/Library/BootManagerUiLib/BootManagerUiLib.inf
       NULL|MdeModulePkg/Library/BootMaintenanceManagerUiLib/BootMaintenanceManagerUiLib.inf
 !ifdef $(CSM_ENABLE)
-      NULL|IntelFrameworkModulePkg/Library/LegacyBootManagerLib/LegacyBootManagerLib.inf
-      NULL|IntelFrameworkModulePkg/Library/LegacyBootMaintUiLib/LegacyBootMaintUiLib.inf
+      NULL|OvmfPkg/Csm/LegacyBootManagerLib/LegacyBootManagerLib.inf
+      NULL|OvmfPkg/Csm/LegacyBootMaintUiLib/LegacyBootMaintUiLib.inf
 !endif
   }
   OvmfPkg/VirtioPciDeviceDxe/VirtioPciDeviceDxe.inf
@@ -741,23 +747,18 @@
   MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
   MdeModulePkg/Universal/MemoryTest/NullMemoryTestDxe/NullMemoryTestDxe.inf
 
+!ifndef $(CSM_ENABLE)
   OvmfPkg/QemuVideoDxe/QemuVideoDxe.inf
+!endif
   OvmfPkg/QemuRamfbDxe/QemuRamfbDxe.inf
   OvmfPkg/VirtioGpuDxe/VirtioGpu.inf
 
   #
   # ISA Support
   #
-!if $(USE_LEGACY_ISA_STACK) == FALSE
   OvmfPkg/SioBusDxe/SioBusDxe.inf
   MdeModulePkg/Bus/Pci/PciSioSerialDxe/PciSioSerialDxe.inf
   MdeModulePkg/Bus/Isa/Ps2KeyboardDxe/Ps2KeyboardDxe.inf
-!else
-  PcAtChipsetPkg/IsaAcpiDxe/IsaAcpi.inf
-  IntelFrameworkModulePkg/Bus/Isa/IsaBusDxe/IsaBusDxe.inf
-  IntelFrameworkModulePkg/Bus/Isa/IsaSerialDxe/IsaSerialDxe.inf
-  IntelFrameworkModulePkg/Bus/Isa/Ps2KeyboardDxe/Ps2keyboardDxe.inf
-!endif
 
   #
   # SMBIOS Support
@@ -802,11 +803,11 @@
   MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
 
 !ifdef $(CSM_ENABLE)
-  IntelFrameworkModulePkg/Csm/BiosThunk/VideoDxe/VideoDxe.inf {
+  OvmfPkg/Csm/BiosThunk/VideoDxe/VideoDxe.inf {
     <LibraryClasses>
       PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
   }
-  IntelFrameworkModulePkg/Csm/LegacyBiosDxe/LegacyBiosDxe.inf
+  OvmfPkg/Csm/LegacyBiosDxe/LegacyBiosDxe.inf
   OvmfPkg/Csm/Csm16/Csm16.inf
 !endif
 
@@ -904,6 +905,9 @@
   }
 !endif
 
+  #
+  # TPM2 support
+  #
 !if $(TPM2_ENABLE) == TRUE
   SecurityPkg/Tcg/Tcg2Dxe/Tcg2Dxe.inf {
     <LibraryClasses>
@@ -914,5 +918,9 @@
       NULL|SecurityPkg/Library/HashInstanceLibSha256/HashInstanceLibSha256.inf
       NULL|SecurityPkg/Library/HashInstanceLibSha384/HashInstanceLibSha384.inf
       NULL|SecurityPkg/Library/HashInstanceLibSha512/HashInstanceLibSha512.inf
+      NULL|SecurityPkg/Library/HashInstanceLibSm3/HashInstanceLibSm3.inf
   }
+!if $(TPM2_CONFIG_ENABLE) == TRUE
+  SecurityPkg/Tcg/Tcg2Config/Tcg2ConfigDxe.inf
+!endif
 !endif

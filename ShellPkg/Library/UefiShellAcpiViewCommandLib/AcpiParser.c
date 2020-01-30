@@ -1,7 +1,7 @@
 /** @file
   ACPI parser
 
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
+  Copyright (c) 2016 - 2019, ARM Limited. All rights reserved.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
@@ -121,6 +121,10 @@ VerifyChecksum (
   UINT8 Checksum;
   UINTN OriginalAttribute;
 
+  //
+  // set local variables to suppress incorrect compiler/analyzer warnings
+  //
+  OriginalAttribute = 0;
   ByteCount = 0;
   Checksum = 0;
 
@@ -139,7 +143,7 @@ VerifyChecksum (
                          ((OriginalAttribute&(BIT4|BIT5|BIT6))>>4))
                        );
       }
-      Print (L"\n\nTable Checksum : OK\n\n");
+      Print (L"Table Checksum : OK\n\n");
     } else {
       IncrementErrorCount ();
       if (GetColourHighlighting ()) {
@@ -149,7 +153,7 @@ VerifyChecksum (
                          ((OriginalAttribute&(BIT4|BIT5|BIT6))>>4))
                        );
       }
-      Print (L"\n\nTable Checksum : FAILED (0x%X)\n\n", Checksum);
+      Print (L"Table Checksum : FAILED (0x%X)\n\n", Checksum);
     }
     if (GetColourHighlighting ()) {
       gST->ConOut->SetAttribute (gST->ConOut, OriginalAttribute);
@@ -219,7 +223,7 @@ DumpRaw (
 
   // Print ASCII data for the final line.
   AsciiBuffer[AsciiBufferIndex] = '\0';
-  Print (L"  %a", AsciiBuffer);
+  Print (L"  %a\n\n", AsciiBuffer);
 }
 
 /**
@@ -290,7 +294,7 @@ DumpUint64 (
 
   Val = *(UINT32*)(Ptr + sizeof (UINT32));
 
-  Val <<= 32;
+  Val = LShiftU64(Val,32);
   Val |= (UINT64)*(UINT32*)Ptr;
 
   Print (Format, Val);
@@ -402,6 +406,39 @@ Dump8Chars (
 }
 
 /**
+  This function traces 12 characters which can be optionally
+  formated using the format string if specified.
+
+  If no format string is specified the Format must be NULL.
+
+  @param [in] Format  Optional format string for tracing the data.
+  @param [in] Ptr     Pointer to the start of the buffer.
+**/
+VOID
+EFIAPI
+Dump12Chars (
+  IN CONST CHAR16* Format OPTIONAL,
+  IN       UINT8*  Ptr
+  )
+{
+  Print (
+    (Format != NULL) ? Format : L"%c%c%c%c%c%c%c%c%c%c%c%c",
+    Ptr[0],
+    Ptr[1],
+    Ptr[2],
+    Ptr[3],
+    Ptr[4],
+    Ptr[5],
+    Ptr[6],
+    Ptr[7],
+    Ptr[8],
+    Ptr[9],
+    Ptr[10],
+    Ptr[11]
+    );
+}
+
+/**
   This function indents and prints the ACPI table Field Name.
 
   @param [in] Indent      Number of spaces to add to the global table indent.
@@ -472,6 +509,10 @@ ParseAcpi (
   BOOLEAN HighLight;
   UINTN   OriginalAttribute;
 
+  //
+  // set local variables to suppress incorrect compiler/analyzer warnings
+  //
+  OriginalAttribute = 0;
   Offset = 0;
 
   // Increment the Indent
@@ -506,7 +547,8 @@ ParseAcpi (
       break;
     }
 
-    if (Offset != Parser[Index].Offset) {
+    if (GetConsistencyChecking () &&
+        (Offset != Parser[Index].Offset)) {
       IncrementErrorCount ();
       Print (
         L"\nERROR: %a: Offset Mismatch for %s\n"
@@ -549,7 +591,8 @@ ParseAcpi (
 
         // Validating only makes sense if we are tracing
         // the parsed table entries, to report by table name.
-        if (Parser[Index].FieldValidator != NULL) {
+        if (GetConsistencyChecking () &&
+            (Parser[Index].FieldValidator != NULL)) {
           Parser[Index].FieldValidator (Ptr, Parser[Index].Context);
         }
       }
@@ -587,23 +630,27 @@ STATIC CONST ACPI_PARSER GasParser[] = {
 
   @param [in] Ptr     Pointer to the start of the buffer.
   @param [in] Indent  Number of spaces to indent the output.
+  @param [in] Length  Length of the GAS structure buffer.
+
+  @retval Number of bytes parsed.
 **/
-VOID
+UINT32
 EFIAPI
 DumpGasStruct (
   IN UINT8*        Ptr,
-  IN UINT32        Indent
+  IN UINT32        Indent,
+  IN UINT32        Length
   )
 {
   Print (L"\n");
-  ParseAcpi (
-    TRUE,
-    Indent,
-    NULL,
-    Ptr,
-    GAS_LENGTH,
-    PARSER_PARAMS (GasParser)
-    );
+  return ParseAcpi (
+           TRUE,
+           Indent,
+           NULL,
+           Ptr,
+           Length,
+           PARSER_PARAMS (GasParser)
+           );
 }
 
 /**
@@ -619,7 +666,7 @@ DumpGas (
   IN UINT8*        Ptr
   )
 {
-  DumpGasStruct (Ptr, 2);
+  DumpGasStruct (Ptr, 2, GAS_LENGTH);
 }
 
 /**

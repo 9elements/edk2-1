@@ -120,7 +120,7 @@ BuildHddPasswordDeviceInfo (
 
     //
     // 1. Handle device which already set password.
-    // 2. When request to send freeze comamnd, driver also needs to handle device
+    // 2. When request to send freeze command, driver also needs to handle device
     //    which support security feature.
     //
     if ((!PasswordIsFullZero (ConfigFormEntry->Password)) ||
@@ -1345,6 +1345,22 @@ HddPasswordRequestPassword (
   //
   if ((ConfigFormEntry->IfrData.SecurityStatus.Supported) &&
       (ConfigFormEntry->IfrData.SecurityStatus.Enabled)) {
+
+     //
+     // Add PcdSkipHddPasswordPrompt to determin whether to skip password prompt.
+     // Due to board design, device may not power off during system warm boot, which result in
+     // security status remain unlocked status, hence we add device security status check here.
+     //
+     // If device is in the locked status, device keeps locked and system continues booting.
+     // If device is in the unlocked status, system is forced shutdown for security concern.
+     //
+     if (PcdGetBool (PcdSkipHddPasswordPrompt)) {
+       if (ConfigFormEntry->IfrData.SecurityStatus.Locked) {
+         return;
+       } else {
+         gRT->ResetSystem (EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+       }
+    }
     //
     // As soon as the HDD password is in enabled state, we pop up a window to unlock hdd
     // no matter it's really in locked or unlocked state.
@@ -1992,9 +2008,9 @@ SaveHddPasswordRequest (
 }
 
 /**
-  Get the HDD Password configuration form entry by the index of the goto opcode actived.
+  Get the HDD Password configuration form entry by the index of the goto opcode activated.
 
-  @param[in]  Index The 0-based index of the goto opcode actived.
+  @param[in]  Index The 0-based index of the goto opcode activated.
 
   @return The HDD Password configuration form entry found.
 **/
@@ -2742,7 +2758,7 @@ HddPasswordConfigFormInit (
   @param ImageHandle     Image handle this driver.
   @param SystemTable     Pointer to SystemTable.
 
-  @retval EFI_SUCESS     This function always complete successfully.
+  @retval EFI_SUCCESS     This function always complete successfully.
 
 **/
 EFI_STATUS
@@ -2754,7 +2770,7 @@ HddPasswordDxeInit (
 {
   EFI_STATUS                     Status;
   HDD_PASSWORD_DXE_PRIVATE_DATA  *Private;
-  EFI_EVENT                      Registration;
+  VOID                           *Registration;
   EFI_EVENT                      EndOfDxeEvent;
   EDKII_VARIABLE_LOCK_PROTOCOL   *VariableLock;
 
@@ -2790,7 +2806,7 @@ HddPasswordDxeInit (
   ASSERT_EFI_ERROR (Status);
 
   //
-  // Make HDD_PASSWORD_VARIABLE_NAME varible read-only.
+  // Make HDD_PASSWORD_VARIABLE_NAME variable read-only.
   //
   Status = gBS->LocateProtocol (&gEdkiiVariableLockProtocolGuid, NULL, (VOID **) &VariableLock);
   if (!EFI_ERROR (Status)) {

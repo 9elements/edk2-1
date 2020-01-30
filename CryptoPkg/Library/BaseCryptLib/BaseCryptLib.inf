@@ -37,6 +37,7 @@
   Hmac/CryptHmacMd5.c
   Hmac/CryptHmacSha1.c
   Hmac/CryptHmacSha256.c
+  Kdf/CryptHkdf.c
   Cipher/CryptAes.c
   Cipher/CryptTdes.c
   Cipher/CryptArc4.c
@@ -57,6 +58,7 @@
   SysCall/CrtWrapper.c
   SysCall/TimerWrapper.c
   SysCall/BaseMemAllocation.c
+  SysCall/inet_pton.c
 
 [Sources.Ia32]
   Rand/CryptRandTsc.c
@@ -100,5 +102,6 @@
 
   GCC:*_CLANG35_*_CC_FLAGS = -std=c99
   GCC:*_CLANG38_*_CC_FLAGS = -std=c99
+  GCC:*_CLANGPDB_*_CC_FLAGS = -std=c99 -Wno-error=incompatible-pointer-types
 
   XCODE:*_*_*_CC_FLAGS = -std=c99

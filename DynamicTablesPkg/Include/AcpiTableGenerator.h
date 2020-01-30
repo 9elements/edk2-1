@@ -51,6 +51,10 @@ The Dynamic Tables Framework implements the following ACPI table generators:
             from the Configuration Manager and builds the MCFG table.
   - IORT  : The IORT generator collates the IO Topology information from the
             Configuration Manager and builds the IORT table.
+  - PPTT  : The PPTT generator collates the processor topology information from
+            the Configuration Manager and builds the PPTT table.
+  - SRAT  : The SRAT generator collates the system resource affinity information
+            from the Configuration Manager and builds the SRAT table.
 */
 
 /** The ACPI_TABLE_GENERATOR_ID type describes ACPI table generator ID.
@@ -72,6 +76,8 @@ typedef enum StdAcpiTableId {
   EStdAcpiTableIdSpcr,                          ///< SPCR Generator
   EStdAcpiTableIdMcfg,                          ///< MCFG Generator
   EStdAcpiTableIdIort,                          ///< IORT Generator
+  EStdAcpiTableIdPptt,                          ///< PPTT Generator
+  EStdAcpiTableIdSrat,                          ///< SRAT Generator
   EStdAcpiTableIdMax
 } ESTD_ACPI_TABLE_ID;
 
