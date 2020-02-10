@@ -1707,8 +1707,8 @@ BootMaintenanceManagerUiLibConstructor (
 
   mBmmCallbackInfo->MenuEntry     = (BM_MENU_ENTRY *) Ptr;
 
-  mBmmCallbackInfo->BmmPreviousPageId  = FORM_MAIN_ID;
-  mBmmCallbackInfo->BmmCurrentPageId   = FORM_MAIN_ID;
+  mBmmCallbackInfo->BmmPreviousPageId  = FORM_BOOT_CHG_ID;
+  mBmmCallbackInfo->BmmCurrentPageId   = FORM_BOOT_CHG_ID;
 
   InitAllMenu (mBmmCallbackInfo);
 
