@@ -19,17 +19,6 @@
 #include <Library/DebugLib.h>
 #include <Library/PcdLib.h>
 
-
-/**
-  Assert the validity of a PCI address. A valid PCI address should contain 1's
-  only in the low 28 bits.
-
-  @param  A The address to validate.
-
-**/
-#define ASSERT_INVALID_PCI_ADDRESS(A) \
-  ASSERT (((A) & ~0xfffffff) == 0)
-
 /**
   Registers a PCI device so PCI configuration registers may be accessed after
   SetVirtualAddressMap().
@@ -58,7 +47,6 @@ PciExpressRegisterForRuntimeAccess (
   IN UINTN  Address
   )
 {
-  ASSERT_INVALID_PCI_ADDRESS (Address);
   return RETURN_UNSUPPORTED;
 }
 
@@ -78,6 +66,38 @@ GetPciExpressBaseAddress (
 {
   return (VOID*)(UINTN) PcdGet64 (PcdPciExpressBaseAddress);
 }
+
+/**
+  Gets the size of PCI Express.
+
+  This internal functions retrieves PCI Express Base Size via a PCD entry
+  PcdPciExpressBaseSize.
+
+  @return The base address of PCI Express.
+
+**/
+STATIC
+UINTN
+PcdPciExpressBaseSize (
+  VOID
+  )
+{
+  return (UINTN) PcdGet64 (PcdPciExpressBaseSize);
+}
+
+/**
+  Assert the validity of a PCI address. A valid PCI address should contain 1's
+  only in the low 28 bits. PcdPciExpressBaseSize limits the size to the real
+  number of PCI busses in this segment.
+
+  @param  A The address to validate.
+
+**/
+#define ASSERT_INVALID_PCI_ADDRESS(A) \
+  ASSERT (((A) & ~0xfffffff) == 0); \
+  if ((A) >= PcdPciExpressBaseSize()) { \
+    return ~0; \
+  }
 
 /**
   Reads an 8-bit PCI configuration register.
