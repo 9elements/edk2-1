@@ -13,7 +13,7 @@ source edksetup.sh
 
 To build on Linux run:
 
-`build -D SERIAL_TERMINAL=FALSE -D SECURE_BOOT_ENABLE=TRUE -D BOOTLOADER=COREBOOT -DPS2_KEYBOARD_ENABLE -a IA32 -a X64 -t GCC5 -b DEBUG -p UefiPayloadPkg/UefiPayloadPkgIa32X64.dsc`
+`build -D DISABLE_SERIAL_TERMINAL=TRUE -D SECURE_BOOT_ENABLE=TRUE -D BOOTLOADER=COREBOOT -DPS2_KEYBOARD_ENABLE -a IA32 -a X64 -t GCC5 -b DEBUG -p UefiPayloadPkg/UefiPayloadPkgIa32X64.dsc`
 
 To add PXE support on Intel PRO/1000 network cards run:
 
