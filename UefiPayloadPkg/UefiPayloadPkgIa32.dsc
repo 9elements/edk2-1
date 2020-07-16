@@ -39,6 +39,11 @@
   DEFINE MAX_LOGICAL_PROCESSORS       = 64
 
   #
+  # PCI options
+  #
+  DEFINE PCIE_BASE                    = 0xE0000000
+
+  #
   # Serial port set up
   #
   DEFINE BAUD_RATE                    = 115200
@@ -142,9 +147,13 @@
   PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
   CpuLib|MdePkg/Library/BaseCpuLib/BaseCpuLib.inf
   IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsic.inf
+!if $(PCIE_BASE) == 0
+  PciLib|MdePkg/Library/BasePciLibCf8/BasePciLibCf8.inf
   PciCf8Lib|MdePkg/Library/BasePciCf8Lib/BasePciCf8Lib.inf
-  PciLib|UefiPayloadPkg/Library/BasePciLibPciExpress/BasePciLibPciExpress.inf
-  PciExpressLib|UefiPayloadPkg/Library/BasePciExpressLib/BasePciExpressLib.inf
+!else
+  PciLib|MdePkg/Library/BasePciLibPciExpress/BasePciLibPciExpress.inf
+  PciExpressLib|MdePkg/Library/BasePciExpressLib/BasePciExpressLib.inf
+!endif
   PciSegmentLib|MdePkg/Library/BasePciSegmentLibPci/BasePciSegmentLibPci.inf
   PeCoffLib|MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
   PeCoffGetEntryPointLib|MdePkg/Library/BasePeCoffGetEntryPointLib/BasePeCoffGetEntryPointLib.inf
@@ -269,7 +278,6 @@
 [LibraryClasses.IA32.PEI_CORE, LibraryClasses.IA32.PEIM]
   PcdLib|MdePkg/Library/PeiPcdLib/PeiPcdLib.inf
   HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
-  PciLib|MdePkg/Library/BasePciLibCf8/BasePciLibCf8.inf
   MemoryAllocationLib|MdePkg/Library/PeiMemoryAllocationLib/PeiMemoryAllocationLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/PeiReportStatusCodeLib/PeiReportStatusCodeLib.inf
   ExtractGuidedSectionLib|MdePkg/Library/PeiExtractGuidedSectionLib/PeiExtractGuidedSectionLib.inf
@@ -351,6 +359,8 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x10000
   gEfiMdeModulePkgTokenSpaceGuid.PcdVpdBaseAddress|0x0
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
+
+  gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress|$(PCIE_BASE)
 
 !if $(SOURCE_DEBUG_ENABLE)
   gEfiSourceLevelDebugPkgTokenSpaceGuid.PcdDebugLoadImageMethod|0x2
