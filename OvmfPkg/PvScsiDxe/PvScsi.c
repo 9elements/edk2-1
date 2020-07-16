@@ -455,8 +455,12 @@ HandleResponse (
 
   //
   // Report target status
+  // (Strangely, PVSCSI interface defines Response->ScsiStatus as UINT16.
+  // But it should de-facto always have a value that fits UINT8. To avoid
+  // unexpected behavior, verify value is in UINT8 bounds before casting)
   //
-  Packet->TargetStatus = Response->ScsiStatus;
+  ASSERT (Response->ScsiStatus <= MAX_UINT8);
+  Packet->TargetStatus = (UINT8)Response->ScsiStatus;
 
   //
   // Host adapter status and function return value depend on
@@ -987,13 +991,6 @@ PvScsiInitRings (
   )
 {
   EFI_STATUS Status;
-  union {
-    PVSCSI_CMD_DESC_SETUP_RINGS Cmd;
-    UINT32                      Uint32;
-  } AlignedCmd;
-  PVSCSI_CMD_DESC_SETUP_RINGS *Cmd;
-
-  Cmd = &AlignedCmd.Cmd;
 
   Status = PvScsiAllocateSharedPages (
              Dev,
@@ -1028,45 +1025,7 @@ PvScsiInitRings (
   }
   ZeroMem (Dev->RingDesc.RingCmps, EFI_PAGE_SIZE);
 
-  ZeroMem (Cmd, sizeof (*Cmd));
-  Cmd->ReqRingNumPages = 1;
-  Cmd->CmpRingNumPages = 1;
-  Cmd->RingsStatePPN = RShiftU64 (
-                         Dev->RingDesc.RingStateDmaDesc.DeviceAddress,
-                         EFI_PAGE_SHIFT
-                         );
-  Cmd->ReqRingPPNs[0] = RShiftU64 (
-                          Dev->RingDesc.RingReqsDmaDesc.DeviceAddress,
-                          EFI_PAGE_SHIFT
-                          );
-  Cmd->CmpRingPPNs[0] = RShiftU64 (
-                          Dev->RingDesc.RingCmpsDmaDesc.DeviceAddress,
-                          EFI_PAGE_SHIFT
-                          );
-
-  STATIC_ASSERT (
-    sizeof (*Cmd) % sizeof (UINT32) == 0,
-    "Cmd must be multiple of 32-bit words"
-    );
-  Status = PvScsiWriteCmdDesc (
-             Dev,
-             PvScsiCmdSetupRings,
-             (UINT32 *)Cmd,
-             sizeof (*Cmd) / sizeof (UINT32)
-             );
-  if (EFI_ERROR (Status)) {
-    goto FreeRingCmps;
-  }
-
   return EFI_SUCCESS;
-
-FreeRingCmps:
-  PvScsiFreeSharedPages (
-    Dev,
-    1,
-    Dev->RingDesc.RingCmps,
-    &Dev->RingDesc.RingCmpsDmaDesc
-    );
 
 FreeRingReqs:
   PvScsiFreeSharedPages (
@@ -1113,6 +1072,48 @@ PvScsiFreeRings (
     Dev->RingDesc.RingState,
     &Dev->RingDesc.RingStateDmaDesc
     );
+}
+
+STATIC
+EFI_STATUS
+PvScsiSetupRings (
+  IN OUT PVSCSI_DEV *Dev
+  )
+{
+  union {
+    PVSCSI_CMD_DESC_SETUP_RINGS Cmd;
+    UINT32                      Uint32;
+  } AlignedCmd;
+  PVSCSI_CMD_DESC_SETUP_RINGS *Cmd;
+
+  Cmd = &AlignedCmd.Cmd;
+
+  ZeroMem (Cmd, sizeof (*Cmd));
+  Cmd->ReqRingNumPages = 1;
+  Cmd->CmpRingNumPages = 1;
+  Cmd->RingsStatePPN = RShiftU64 (
+                         Dev->RingDesc.RingStateDmaDesc.DeviceAddress,
+                         EFI_PAGE_SHIFT
+                         );
+  Cmd->ReqRingPPNs[0] = RShiftU64 (
+                          Dev->RingDesc.RingReqsDmaDesc.DeviceAddress,
+                          EFI_PAGE_SHIFT
+                          );
+  Cmd->CmpRingPPNs[0] = RShiftU64 (
+                          Dev->RingDesc.RingCmpsDmaDesc.DeviceAddress,
+                          EFI_PAGE_SHIFT
+                          );
+
+  STATIC_ASSERT (
+    sizeof (*Cmd) % sizeof (UINT32) == 0,
+    "Cmd must be multiple of 32-bit words"
+    );
+  return PvScsiWriteCmdDesc (
+           Dev,
+           PvScsiCmdSetupRings,
+           (UINT32 *)Cmd,
+           sizeof (*Cmd) / sizeof (UINT32)
+           );
 }
 
 STATIC
@@ -1168,6 +1169,14 @@ PvScsiInit (
   }
 
   //
+  // Setup rings against device
+  //
+  Status = PvScsiSetupRings (Dev);
+  if (EFI_ERROR (Status)) {
+    goto FreeDmaCommBuffer;
+  }
+
+  //
   // Populate the exported interface's attributes
   //
   Dev->PassThru.Mode             = &Dev->PassThruMode;
@@ -1198,13 +1207,15 @@ PvScsiInit (
 
   return EFI_SUCCESS;
 
-FreeRings:
-  //
-  // Reset device to stop device usage of the rings.
-  // This is required to safely free the rings.
-  //
-  PvScsiResetAdapter (Dev);
+FreeDmaCommBuffer:
+  PvScsiFreeSharedPages (
+    Dev,
+    EFI_SIZE_TO_PAGES (sizeof (*Dev->DmaBuf)),
+    Dev->DmaBuf,
+    &Dev->DmaBufDmaDesc
+    );
 
+FreeRings:
   PvScsiFreeRings (Dev);
 
 RestorePciAttributes:
