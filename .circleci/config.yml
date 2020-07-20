@@ -44,6 +44,9 @@ jobs:
           command: |
             source ./edksetup.sh
             build -D BOOTLOADER=COREBOOT << parameters.extraArgs >> -a IA32 -a X64 -t GCC5 -b DEBUG -p UefiPayloadPkg/UefiPayloadPkgIa32X64.dsc
+      - store_artifacts:
+          path: /root/project/Build/UefiPayloadPkgX64/DEBUG_GCC5/FV/UEFIPAYLOAD.fd
+          destination: UefiPayloadPkgX64/DEBUG_GCC5/FV/UEFIPAYLOAD.fd
 
 workflows:
   build:
