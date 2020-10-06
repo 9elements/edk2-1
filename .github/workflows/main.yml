@@ -81,3 +81,23 @@ jobs:
           source ./edksetup.sh
           build $extraFlags -D BOOTLOADER=COREBOOT -a IA32 -a X64 -t GCC5 -b DEBUG -p UefiPayloadPkg/UefiPayloadPkgIa32X64.dsc
 
+      - name: Build default Payload IA32
+        run: |
+          export extraFlags=""
+          source ./edksetup.sh
+          build $extraFlags -D BOOTLOADER=COREBOOT -a IA32 -t GCC5 -b DEBUG -p UefiPayloadPkg/UefiPayloadPkgIa32.dsc
+
+      - name: Build SecureBoot Payload IA32
+        run: |
+          export extraFlags="-D SECURE_BOOT_ENABLE=TRUE"
+          source ./edksetup.sh
+          build $extraFlags -D BOOTLOADER=COREBOOT -a IA32 -t GCC5 -b DEBUG -p UefiPayloadPkg/UefiPayloadPkgIa32.dsc
+
+      - name: Build iPXE Payload
+        run: |
+          export extraFlags="-D NETWORK_IPXE=TRUE"
+          source ./edksetup.sh
+          build $extraFlags -D BOOTLOADER=COREBOOT -a IA32 -t GCC5 -b DEBUG -p UefiPayloadPkg/UefiPayloadPkgIa32.dsc
+
+
+
